@@ -191,18 +191,17 @@ class Context(object):
 
     def add_frame(self,depth,xMat,yMat,zMat):
         if self.seen == 0:
-            self.lastdiff = depth * 0.0
             self.diff = depth * 0.0
             self.lastframe = depth
             self.diffsum = 0
-        self.lastdiff = self.diff
-        self.diff = depth - self.lastframe
+        self.diff = np.abs((depth < 1020) * (depth - self.lastframe))
         self.lastframe = depth
         self.diffsum = sum(self.diff)
         booldiff = diff > 0
         self.cx = np.average(booldiff * xMat)
         self.cy = np.average(booldiff * yMat)
         self.cz = np.average(booldiff * zMat)
+        logging.warn("%s %s %s [%s,%s,%s]" % (self.diffsum,np.min(self.diff),np.max(self.diff),self.cx, self.cy, self.cz))
         self.seen += 1
         
         
@@ -217,13 +216,15 @@ class Context(object):
 # 3.2 count for activation
 
 def detect_stillness(diffmat, threshold=100):
-    return np.sum(( diffmat > 0 ) & (diffmat < 1000) * diffmat) < threshold
+    stillness = np.sum(( diffmat > 0 ) & (diffmat < 1000) * diffmat)
+    logging.warn("Stillness %s < %s" % (stillness,threshold))
+    return stillness <  threshold
 
 class State(object):
     def __init__(self):
         self._nextstate = self
     def transition(self, state):
-        self._nextstate = self
+        self._nextstate = state
     def nextstate(self):
         return self._nextstate
 
@@ -234,7 +235,7 @@ class InMotion(State):
     def step(self,context):
         logging.info("State:InMotion")
         self.steps += 1
-        if not still(context.diff):
+        if not detect_stillness(context.diff):
             self.transition(self)
         else:
             self.steps = 0
@@ -251,7 +252,7 @@ class Stillness(State):
     def step(self,context):
         logging.info("State:Stillness")
         self.steps += 1
-        if still(context.diff,self.threshold):
+        if detect_stillness(context.diff,self.threshold):
             self.transition(self)
         else:
             self.steps = 0
@@ -267,13 +268,15 @@ while(1):
     if depth_map == None:
         print "Bad?"
         continue
-    context.add_frame(depth_map)
+    x,y,z = depth_map_to_points(depth_map)
+    context.add_frame(depth_map,x,y,z)
     curr_state.step(context)
     curr_state = curr_state.nextstate()
 
     depth_map_bmp = depth_map_to_bmp(depth_map)
     depth_map_bmp = cv2.flip(depth_map_bmp, 1)
     cv2.imshow(screen_name,depth_map_bmp)
+    cv2.imshow("%s - diff" % screen_name,depth_map_to_bmp(context.diff))
 
     if handle_keys():
         break
