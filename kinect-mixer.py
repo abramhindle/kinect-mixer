@@ -7,7 +7,9 @@ import freenect
 import liblo
 import random
 import time
+import logging
 
+logging.basicConfig(stream = sys.stderr, level=logging.INFO)
 # 1. get kinect input
 # 2. bounding box calculation
 
@@ -179,18 +181,96 @@ class SphereBounder(Bounder):
         (cz,cx,cy) = point_to_depth_map(center[0],center[1],center[2])
         matches = (xMat - cx) ** 2 + (yMat - cy) ** 2 + (zMat - cz) ** 2 < (radius ** 3)
         return np.sum(matches) > 100 # choose something better
-        
 
+class Context(object):
+    def __init__(self):
+        self.diff = None
+        self.lastframe = None
+        self.diffsum = 0
+        self.seen = 0
 
+    def add_frame(self,depth,xMat,yMat,zMat):
+        if self.seen == 0:
+            self.lastdiff = depth * 0.0
+            self.diff = depth * 0.0
+            self.lastframe = depth
+            self.diffsum = 0
+        self.lastdiff = self.diff
+        self.diff = depth - self.lastframe
+        self.lastframe = depth
+        self.diffsum = sum(self.diff)
+        booldiff = diff > 0
+        self.cx = np.average(booldiff * xMat)
+        self.cy = np.average(booldiff * yMat)
+        self.cz = np.average(booldiff * zMat)
+        self.seen += 1
         
+        
+# 0. start
+# 1. detect motion
+# 1.1 find centroid
+# 1.2 remember centroid
+# 2. detect stillness
+# 2.1 count stillness time
+# 3. detect motion
+# 3.1 find centroid
+# 3.2 count for activation
+
+def detect_stillness(diffmat, threshold=100):
+    return np.sum(( diffmat > 0 ) & (diffmat < 1000) * diffmat) < threshold
+
+class State(object):
+    def __init__(self):
+        self._nextstate = self
+    def transition(self, state):
+        self._nextstate = self
+    def nextstate(self):
+        return self._nextstate
+
+class InMotion(State):
+    def __init__(self):
+        super(InMotion,self).__init__()
+        self.steps = 0
+    def step(self,context):
+        logging.info("State:InMotion")
+        self.steps += 1
+        if not still(context.diff):
+            self.transition(self)
+        else:
+            self.steps = 0
+            self.transition(Stillness())
+
+    
+
+class Stillness(State):
+    def __init__(self):
+        super(Stillness,self).__init__()
+        self.steps = 0
+        self.threshold = 100
+
+    def step(self,context):
+        logging.info("State:Stillness")
+        self.steps += 1
+        if still(context.diff,self.threshold):
+            self.transition(self)
+        else:
+            self.steps = 0
+            self.transition(InMotion())
+                
 
 starttime = None
+context = Context()
+curr_state = Stillness()
 while(1):
 
     depth_map = get_depth_map()
     if depth_map == None:
         print "Bad?"
         continue
+    context.add_frame(depth_map)
+    curr_state.step(context)
+    curr_state = curr_state.nextstate()
+
     depth_map_bmp = depth_map_to_bmp(depth_map)
     depth_map_bmp = cv2.flip(depth_map_bmp, 1)
     cv2.imshow(screen_name,depth_map_bmp)
