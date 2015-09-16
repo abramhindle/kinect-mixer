@@ -188,20 +188,26 @@ class Context(object):
         self.lastframe = None
         self.diffsum = 0
         self.seen = 0
+        self.mask = None
 
     def add_frame(self,depth,xMat,yMat,zMat):
+        depth = depth.astype(np.int)
         if self.seen == 0:
-            self.diff = depth * 0.0
+            self.diff = depth * 0
             self.lastframe = depth
             self.diffsum = 0
-        self.diff = np.abs((depth < 1020) * (depth - self.lastframe))
+        if self.mask == None:
+            self.mask = self.depth >= 0
+        self.diff = np.abs((self.mask & (depth > 0) & (self.lastframe > 0)) * (depth - self.lastframe))
+        #self.diff = np.abs(depth - self.lastframe)
+        #self.diff = (self.diff < 10) * self.diff
         self.lastframe = depth
         self.diffsum = sum(self.diff)
         booldiff = diff > 0
         self.cx = np.average(booldiff * xMat)
         self.cy = np.average(booldiff * yMat)
         self.cz = np.average(booldiff * zMat)
-        logging.warn("%s %s %s [%s,%s,%s]" % (self.diffsum,np.min(self.diff),np.max(self.diff),self.cx, self.cy, self.cz))
+        logging.warn("[%s,%s] %s %s %s [%s,%s,%s]" % (np.max(self.lastframe),np.max(depth),self.diffsum/float(640*480),np.min(self.diff),np.max(self.diff),self.cx, self.cy, self.cz))
         self.seen += 1
         
         
@@ -259,9 +265,33 @@ class Stillness(State):
             self.transition(InMotion())
                 
 
+
 starttime = None
 context = Context()
 curr_state = Stillness()
+
+# step 1 get noise map
+
+def get_mask(n=15):
+
+    summap = get_depth_map().astype(np.int)
+    summap *= 0
+    n = 15
+    for i in range(0,n):
+        depth_map = get_depth_map().astype(np.int)
+        summap += (depth_map < 1) | (depth_map > 1020)
+        logging.info("%s %s" % (np.min(depth_map), np.max(depth_map)))
+        logging.info("%s %s %s" % (np.min(summap),np.max(summap),(np.sum(summap)/float(640*480))))
+
+    mask = (summap == n) | (summap < (n*1/10)) * 1
+    return (mask, summap)
+
+context.mask, summap = get_mask(15)
+cv2.imshow("summap",200*summap/60.0)
+cv2.imshow("mask",np.ones(context.mask.shape)*context.mask)
+    
+
+
 while(1):
 
     depth_map = get_depth_map()
@@ -276,7 +306,7 @@ while(1):
     depth_map_bmp = depth_map_to_bmp(depth_map)
     depth_map_bmp = cv2.flip(depth_map_bmp, 1)
     cv2.imshow(screen_name,depth_map_bmp)
-    cv2.imshow("%s - diff" % screen_name,depth_map_to_bmp(context.diff))
+    cv2.imshow("%s - diff" % screen_name,depth_map_to_bmp(context.diff))# * context.diff))
 
     if handle_keys():
         break
