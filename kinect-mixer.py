@@ -8,6 +8,7 @@ import liblo
 import random
 import time
 import logging
+import scipy.ndimage.morphology
 
 logging.basicConfig(stream = sys.stderr, level=logging.INFO)
 # 1. get kinect input
@@ -153,6 +154,9 @@ class BoxBounder(Bounder):
         matches = (xMat >= top[0] ) & (xMat <= bottom[0]) & (yMat >= top[1]) & (yMat <= bottom[1]) & ( zMat >= top[2]) & (zMat <= bottom[2])
         return np.sum(matches) > 100
 
+kernel = np.ones((5,5))
+
+
 
 class SphereBounder(Bounder):
     def __init__(self,center,radius):
@@ -202,6 +206,8 @@ class Context(object):
         if self.mask == None:
             self.mask = self.depth >= 0
         self.diff = np.abs((self.mask & (depth > 0) & (self.lastframe > 0)) * (depth - self.lastframe))
+
+        self.diff = scipy.ndimage.morphology.grey_erosion(self.diff,size=(3,3))
         #self.diff = np.abs(depth - self.lastframe)
         #self.diff = (self.diff < 10) * self.diff
         self.lastframe = depth
@@ -214,7 +220,7 @@ class Context(object):
         self.seen += 1
 
     def detect_stillness(self, threshold=100):
-        thresh = (WIDTH * HEIGHT * 1.0)
+        thresh = (WIDTH * HEIGHT * 0.5)
         logging.info("%s < %s" % (self.diffsum,thresh))
         return self.diffsum < thresh 
 
@@ -222,6 +228,7 @@ class Commander(object):
     def __init__(self):
         self.queue = list()
     def add(self, command):
+        logging.info("Adding command: %s " % command)
         self.queue.append(command)
     def execute_queue(self):
         l = self.queue
@@ -317,6 +324,9 @@ class MoveToPosition(State):
         # wait till motion!
         if self.stills > self.stillthreshold and not stillnow: 
             self.transition(SetPosition(centroid = self.centroid))
+        #elif self.stills >  6*self.stillthreshold and stillnow:
+        #    logging.info("Uh nothing is going on")
+        #    self.transition(TransitionState())
         else:
             self.transition(self)
 
@@ -336,11 +346,11 @@ class SetPosition(State):
         self.stills = 0
         self.constill = 0        
         self.motions = 0
-        self.motion_threshold = 30
+        self.motion_threshold = 15
         self.centroid = centroid
         self.original_centroid = centroid
     def step(self,context):
-        logging.info("State:SetPosition")
+        logging.info("State:SetPosition %s %s" % (self.stills, self.motions))
         self.steps += 1
         stillnow = context.detect_stillness()
         if stillnow:
