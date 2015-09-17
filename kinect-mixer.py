@@ -136,12 +136,11 @@ def handle_keys():
 
 class Bounder(object):
     def __init__(self):
-        super(self)
         self.cb = None
     def matches(self,depthMap,xMat,yMat,zMat):
         return False
     def cb(self,**kwargs):
-        if not cb == None:
+        if not self.cb == None:
             self.cb(self,**kwargs)
     def match_w_cb(self,depthMap,xMat,yMat,zMat):
         if (self.matches(depthMap,xMat,yMat,zMat)):
@@ -166,7 +165,7 @@ kernel = np.ones((5,5))
 
 class SphereBounder(Bounder):
     def __init__(self,center,radius):
-        super(self)
+        super(SphereBounder,self).__init__()
         self.center = center
         self.radius = radius
         self.mini   = 1024*np.ones((WIDTH,HEIGHT))
@@ -189,8 +188,10 @@ class SphereBounder(Bounder):
     def matches(self,depthMap,xMat,yMat,zMat):
         center = self.center
         (cz,cx,cy) = point_to_depth_map(center[0],center[1],center[2])
-        matches = (xMat - cx) ** 2 + (yMat - cy) ** 2 + (zMat - cz) ** 2 < (radius ** 3)
-        return np.sum(matches) > 100 # choose something better
+        matches = (xMat - cx) ** 2 + (yMat - cy) ** 2 + (zMat - cz) ** 2 < (self.radius ** 3)
+        match_sum = np.sum(matches)
+        logging.info("SPhere match sum %s" % match_sum)
+        return match_sum > 100 # choose something better
 
 class Context(object):
     def __init__(self):
@@ -242,6 +243,7 @@ class Commander(object):
         l = self.queue
         self.queue = list()
         for command in l:
+            logging.info("Executing %s" % command)
             command.execute(self)
 
 commander = Commander()
@@ -249,8 +251,14 @@ positions = list()
 bounds = list()
 
 def addPosition(centroid, radius=0.5):
+    global positions
+    global bounds
     positions.append(centroid)
-    bounds.append(SphereBounder(centroid, radius))
+    bounder = SphereBounder(centroid, radius)
+    def responder(self):
+        logger.warn("Centroid: %s reached!" % centroid)
+    bounder.cb = responder
+    bounds.append(bounder)
     
 
 
@@ -372,7 +380,7 @@ class NewPositionCommand(Command):
     def execute(self,commander):
         '''I don't know!'''
         logging.info("NewPositionCommand: (%s,%s,%s)" % self.centroid)
-        positions.append(self.centroid)
+        addPosition(self.centroid)
 
 class SetPosition(State):    
     ''' We start in motion and wait for stillness'''
