@@ -209,7 +209,12 @@ class Context(object):
         self.cz = np.average(booldiff * zMat)
         logging.warn("[%s,%s] %s %s %s [%s,%s,%s]" % (np.max(self.lastframe),np.max(depth),self.diffsum/float(640*480),np.min(self.diff),np.max(self.diff),self.cx, self.cy, self.cz))
         self.seen += 1
-        
+
+    def detect_stillness(self, threshold=100):
+        thresh = (WIDTH * HEIGHT * 1.0)
+        logging.info("%s < %s" % (self.diffsum,thresh))
+        return self.diffsum < thresh 
+
         
 # 0. start
 # 1. detect motion
@@ -221,10 +226,11 @@ class Context(object):
 # 3.1 find centroid
 # 3.2 count for activation
 
-def detect_stillness(diffmat, threshold=100):
-    stillness = np.sum(( diffmat > 0 ) & (diffmat < 1000) * diffmat)
-    logging.warn("Stillness %s < %s" % (stillness,threshold))
-    return stillness <  threshold
+# def detect_stillness(diffmat, threshold=100):
+#     stillness = np.sum( )
+#     logging.warn("Stillness %s < %s" % (stillness,threshold))
+#     return stillness <  threshold
+
 
 class State(object):
     def __init__(self):
@@ -241,7 +247,7 @@ class InMotion(State):
     def step(self,context):
         logging.info("State:InMotion")
         self.steps += 1
-        if not detect_stillness(context.diff):
+        if not context.detect_stillness():
             self.transition(self)
         else:
             self.steps = 0
@@ -258,7 +264,7 @@ class Stillness(State):
     def step(self,context):
         logging.info("State:Stillness")
         self.steps += 1
-        if detect_stillness(context.diff,self.threshold):
+        if context.detect_stillness():
             self.transition(self)
         else:
             self.steps = 0
