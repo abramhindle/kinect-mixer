@@ -219,9 +219,11 @@ class Context(object):
         self.lastframe = depth
         self.diffsum = sum(self.diff)
         booldiff = diff > 0
-        self.cx = np.average(booldiff * xMat)
-        self.cy = np.average(booldiff * yMat)
-        self.cz = np.average(booldiff * zMat)
+        boolcount = np.sum(booldiff)
+        # fix average to existing points
+        self.cx = np.sum(booldiff * xMat)/float(boolcount)
+        self.cy = np.sum(booldiff * yMat)/float(boolcount)
+        self.cz = np.sum(booldiff * zMat)/float(boolcount)
         logging.debug("[%s,%s] %s %s %s [%s,%s,%s]" % (np.max(self.lastframe),np.max(depth),self.diffsum/float(640*480),np.min(self.diff),np.max(self.diff),self.cx, self.cy, self.cz))
         self.seen += 1
 
@@ -244,6 +246,12 @@ class Commander(object):
 
 commander = Commander()
 positions = list()
+
+def addPosition(dmCentroid):
+    
+    
+
+
 
 class Command(object):
     def __init(self):
