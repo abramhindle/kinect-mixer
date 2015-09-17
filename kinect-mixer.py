@@ -110,17 +110,23 @@ def doFullscreen():
         cv2.setWindowProperty(screen_name, cv2.WND_PROP_FULLSCREEN, 0)
         fullscreen = False
 
+curr_state = None
+
 handlers = dict()
 
 def handle_keys():
     global fullscreen
     global handlers
+    global curr_state
     k = cv2.waitKey(1000/60) & 0xff
     if k == 27:
         return True
-    #elif k == ord('s'):
-    #    #cv2.imwrite('opticalfb.png',frame2)
-    #    #cv2.imwrite('opticalhsv.png',rgb)
+    elif k == ord('p'):
+        logging.info('Switching to transition state')
+        curr_state = TransitionState()
+    elif k == ord('s'):
+        logging.info('Switching to stillness state')
+        curr_state = Stillness()
     elif k == ord('f'):
         doFullscreen()
     else:
@@ -216,12 +222,12 @@ class Context(object):
         self.cx = np.average(booldiff * xMat)
         self.cy = np.average(booldiff * yMat)
         self.cz = np.average(booldiff * zMat)
-        logging.warn("[%s,%s] %s %s %s [%s,%s,%s]" % (np.max(self.lastframe),np.max(depth),self.diffsum/float(640*480),np.min(self.diff),np.max(self.diff),self.cx, self.cy, self.cz))
+        logging.debug("[%s,%s] %s %s %s [%s,%s,%s]" % (np.max(self.lastframe),np.max(depth),self.diffsum/float(640*480),np.min(self.diff),np.max(self.diff),self.cx, self.cy, self.cz))
         self.seen += 1
 
     def detect_stillness(self, threshold=100):
         thresh = (WIDTH * HEIGHT * 0.5)
-        logging.info("%s < %s" % (self.diffsum,thresh))
+        logging.debug("%s < %s" % (self.diffsum,thresh))
         return self.diffsum < thresh 
 
 class Commander(object):
@@ -237,6 +243,7 @@ class Commander(object):
             command.execute(self)
 
 commander = Commander()
+positions = list()
 
 class Command(object):
     def __init(self):
@@ -267,6 +274,23 @@ class State(object):
         self._nextstate = state
     def nextstate(self):
         return self._nextstate
+
+class Stillness(State):
+    def __init__(self):
+        super(Stillness,self).__init__()
+        self.steps = 0
+        self.threshold = 100
+
+    def step(self,context):
+        logging.info("State:Stillness")
+        self.steps += 1
+        if context.detect_stillness():
+            self.transition(self)
+        else:
+            self.steps = 0
+            self.transition(InMotion())
+
+default_state = Stillness()
 
 class InMotion(State):
     def __init__(self):
@@ -324,11 +348,12 @@ class MoveToPosition(State):
         # wait till motion!
         if self.stills > self.stillthreshold and not stillnow: 
             self.transition(SetPosition(centroid = self.centroid))
-        #elif self.stills >  6*self.stillthreshold and stillnow:
-        #    logging.info("Uh nothing is going on")
-        #    self.transition(TransitionState())
+        elif self.stills >  6*self.stillthreshold and stillnow:
+            logging.info("Uh nothing is going on")
+            self.transition(TransitionState())
         else:
             self.transition(self)
+
 
 class NewPositionCommand(Command):
     def __init__(self,centroid):
@@ -337,6 +362,7 @@ class NewPositionCommand(Command):
     def execute(self,commander):
         '''I don't know!'''
         logging.info("NewPositionCommand: (%s,%s,%s)" % self.centroid)
+        positions.append(self.centroid)
 
 class SetPosition(State):    
     ''' We start in motion and wait for stillness'''
@@ -362,7 +388,7 @@ class SetPosition(State):
             self.centroid = context.get_centroid()
         if self.motions > self.motion_threshold and self.constill > self.motion_threshold and stillnow:             
             commander.add(NewPositionCommand(self.centroid))
-            self.transition(TransitionState())
+            self.transition(default_state)
         else:
             self.transition(self)
 
@@ -370,26 +396,12 @@ class SetPosition(State):
         
 
 
-class Stillness(State):
-    def __init__(self):
-        super(Stillness,self).__init__()
-        self.steps = 0
-        self.threshold = 100
-
-    def step(self,context):
-        logging.info("State:Stillness")
-        self.steps += 1
-        if context.detect_stillness():
-            self.transition(self)
-        else:
-            self.steps = 0
-            self.transition(InMotion())
                 
 
 
 starttime = None
 context = Context()
-curr_state = TransitionState()
+curr_state = Stillness()
 
 # step 1 get noise map
 
@@ -401,8 +413,8 @@ def get_mask(n=15):
     for i in range(0,n):
         depth_map = get_depth_map().astype(np.int)
         summap += (depth_map < 1) | (depth_map > 1020)
-        logging.info("%s %s" % (np.min(depth_map), np.max(depth_map)))
-        logging.info("%s %s %s" % (np.min(summap),np.max(summap),(np.sum(summap)/float(640*480))))
+        logging.debug("%s %s" % (np.min(depth_map), np.max(depth_map)))
+        logging.debug("%s %s %s" % (np.min(summap),np.max(summap),(np.sum(summap)/float(640*480))))
 
     mask = (summap == n) | (summap < (n*1/10)) * 1
     return (mask, summap)
@@ -410,7 +422,11 @@ def get_mask(n=15):
 context.mask, summap = get_mask(15)
 cv2.imshow("summap",200*summap/60.0)
 cv2.imshow("mask",np.ones(context.mask.shape)*context.mask)
-    
+
+# UI plans
+# press p to set state to transition for setting a position
+# press s to reset to stillness
+# - [ ] need to add positional triggers    
 
 
 while(1):
