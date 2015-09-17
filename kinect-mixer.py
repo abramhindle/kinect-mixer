@@ -190,6 +190,9 @@ class Context(object):
         self.seen = 0
         self.mask = None
 
+    def get_centroid(self):
+        return (self.cx,self.cy,self.cz)
+
     def add_frame(self,depth,xMat,yMat,zMat):
         depth = depth.astype(np.int)
         if self.seen == 0:
@@ -215,6 +218,24 @@ class Context(object):
         logging.info("%s < %s" % (self.diffsum,thresh))
         return self.diffsum < thresh 
 
+class Commander(object):
+    def __init__(self):
+        self.queue = list()
+    def add(self, command):
+        self.queue.append(command)
+    def execute_queue(self):
+        l = self.queue
+        self.queue = list()
+        for command in l:
+            command.execute(self)
+
+commander = Commander()
+
+class Command(object):
+    def __init(self):
+        '''nothing'''
+    def execute(self,commander):
+        '''nothing'''
         
 # 0. start
 # 1. detect motion
@@ -253,7 +274,91 @@ class InMotion(State):
             self.steps = 0
             self.transition(Stillness())
 
-    
+class TransitionState(State):
+    def __init__(self):
+        super(TransitionState,self).__init__()
+        self.steps = 0
+        self.stills = 0
+        self.motions = 0
+        self.stillthreshold = 10
+    def step(self,context):
+        logging.info("State:TransitionState")
+        self.steps += 1
+        self.steps += 1
+        stillnow = context.detect_stillness()
+        if stillnow:
+            self.stills += 1
+        else:
+            self.motions += 1
+        if self.stills > self.stillthreshold and not stillnow:
+            self.transition(MoveToPosition())
+        else:
+            self.transition(self)
+        
+
+class MoveToPosition(State):    
+    ''' Basically wait till motion stops for a second or so '''
+    def __init__(self):
+        super(MoveToPosition,self).__init__()
+        self.steps = 0
+        self.stills = 0
+        self.motions = 0
+        self.stillthreshold = 30
+    def step(self,context):
+        logging.info("State:MoveToPosition ")
+        self.steps += 1
+        stillnow = context.detect_stillness()
+        if stillnow:
+            self.stills += 1
+        else:
+            self.motions += 1
+            self.centroid = context.get_centroid()
+        
+        # wait till motion!
+        if self.stills > self.stillthreshold and not stillnow: 
+            self.transition(SetPosition(centroid = self.centroid))
+        else:
+            self.transition(self)
+
+class NewPositionCommand(Command):
+    def __init__(self,centroid):
+        super(NewPositionCommand,self).__init__()
+        self.centroid = centroid
+    def execute(self,commander):
+        '''I don't know!'''
+        logging.info("NewPositionCommand: (%s,%s,%s)" % self.centroid)
+
+class SetPosition(State):    
+    ''' We start in motion and wait for stillness'''
+    def __init__(self,centroid):
+        super(SetPosition,self).__init__()
+        self.steps = 0
+        self.stills = 0
+        self.constill = 0        
+        self.motions = 0
+        self.motion_threshold = 30
+        self.centroid = centroid
+        self.original_centroid = centroid
+    def step(self,context):
+        logging.info("State:SetPosition")
+        self.steps += 1
+        stillnow = context.detect_stillness()
+        if stillnow:
+            self.stills += 1
+            self.constill += 1
+        else:
+            self.motions += 1
+            self.constill = 0
+            self.centroid = context.get_centroid()
+        if self.motions > self.motion_threshold and self.constill > self.motion_threshold and stillnow:             
+            commander.add(NewPositionCommand(self.centroid))
+            self.transition(TransitionState())
+        else:
+            self.transition(self)
+
+            
+        
+
 
 class Stillness(State):
     def __init__(self):
@@ -274,7 +379,7 @@ class Stillness(State):
 
 starttime = None
 context = Context()
-curr_state = Stillness()
+curr_state = TransitionState()
 
 # step 1 get noise map
 
@@ -308,6 +413,8 @@ while(1):
     context.add_frame(depth_map,x,y,z)
     curr_state.step(context)
     curr_state = curr_state.nextstate()
+
+    commander.execute_queue()
 
     depth_map_bmp = depth_map_to_bmp(depth_map)
     depth_map_bmp = cv2.flip(depth_map_bmp, 1)
