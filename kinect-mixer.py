@@ -246,9 +246,11 @@ class Commander(object):
 
 commander = Commander()
 positions = list()
+bounds = list()
 
-def addPosition(dmCentroid):
-    
+def addPosition(centroid, radius=0.5):
+    positions.append(centroid)
+    bounds.append(SphereBounder(centroid, radius))
     
 
 
@@ -436,9 +438,13 @@ cv2.imshow("mask",np.ones(context.mask.shape)*context.mask)
 # press s to reset to stillness
 # - [ ] need to add positional triggers    
 
+def check_bounds(depthMap,xMat,yMat,zMat,bound_list = None):
+    if bound_list == None:
+        bound_list = bounds
+    for bounder in bound_list:
+        bounder.match_w_cb(depthMap,xMat,yMat,zMat)
 
 while(1):
-
     depth_map = get_depth_map()
     if depth_map == None:
         print "Bad?"
@@ -449,6 +455,8 @@ while(1):
     curr_state = curr_state.nextstate()
 
     commander.execute_queue()
+
+    check_bounds(depth_map,x,y,z,bound_list=bounds)
 
     depth_map_bmp = depth_map_to_bmp(depth_map)
     depth_map_bmp = cv2.flip(depth_map_bmp, 1)
