@@ -34,7 +34,7 @@ http://euanfreeman.co.uk/openkinect-python-and-opencv/
 def get_depth_map():    
     depth, timestamp = freenect.sync_get_depth()
     np.clip(depth, 0, 2**10 - 1, depth)
-    return depth
+    return depth.astype(np.int)
 
 def depth_map_to_bmp(depth):
     depth >>= 2
