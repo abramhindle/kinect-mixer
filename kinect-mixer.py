@@ -68,6 +68,7 @@ def depth_map_to_points(dm):
     return (x,y,z)
 
 def points_to_depth_map(x,y,z):
+    ''' returns z,x,y '''
     dm = 2842.5 * (np.arctan(z / 0.1236)  - 1.1863)
     ourX = (x / Scale_Factor) / (z + Min_Dist) 
     ourY = (y / Scale_Factor) / (z + Min_Dist) 
@@ -187,10 +188,12 @@ class SphereBounder(Bounder):
 
     def matches(self,depthMap,xMat,yMat,zMat):
         center = self.center
-        (cz,cx,cy) = point_to_depth_map(center[0],center[1],center[2])
+        #(cz,cx,cy) = point_to_depth_map(center[0],center[1],center[2])
+        (cx,cy,cz) = center
+        rad = self.radius ** 3
         matches = (xMat - cx) ** 2 + (yMat - cy) ** 2 + (zMat - cz) ** 2 < (self.radius ** 3)
         match_sum = np.sum(matches)
-        logging.info("SPhere match sum %s" % match_sum)
+        logging.info("SPhere match sum %s %s" % (match_sum, rad))
         return match_sum > 100 # choose something better
 
 class Context(object):
@@ -219,8 +222,9 @@ class Context(object):
         #self.diff = (self.diff < 10) * self.diff
         self.lastframe = depth
         self.diffsum = sum(self.diff)
-        booldiff = diff > 0
+        booldiff = self.diff > 0
         boolcount = np.sum(booldiff)
+        logging.debug("boolcount %s" % boolcount)
         # fix average to existing points
         self.cx = np.sum(booldiff * xMat)/float(boolcount)
         self.cy = np.sum(booldiff * yMat)/float(boolcount)
@@ -250,13 +254,13 @@ commander = Commander()
 positions = list()
 bounds = list()
 
-def addPosition(centroid, radius=0.5):
+def addPosition(centroid, radius=0.75):
     global positions
     global bounds
     positions.append(centroid)
     bounder = SphereBounder(centroid, radius)
-    def responder(self):
-        logger.warn("Centroid: %s reached!" % centroid)
+    def responder():
+        logging.warn("Centroid: (%s,%s,%s) reached!" % centroid)
     bounder.cb = responder
     bounds.append(bounder)
     
@@ -382,6 +386,32 @@ class NewPositionCommand(Command):
         logging.info("NewPositionCommand: (%s,%s,%s)" % self.centroid)
         addPosition(self.centroid)
 
+def mix_point(c1, c2, prop=0.5):
+    dprop = 1.0 - prop
+    return (c1[0]*prop + c2[0]*dprop,
+            c1[1]*prop + c2[1]*dprop,
+            c1[2]*prop + c2[2]*dprop)
+
+def min_max_point(minmax, newpoint):
+    return (
+        (
+            max(minmax[0][0],newpoint[0]),
+            max(minmax[0][1],newpoint[1]),
+            max(minmax[0][2],newpoint[2])
+        ),
+        (
+            min(minmax[1][0],newpoint[0]),
+            min(minmax[1][1],newpoint[1]),
+            min(minmax[1][2],newpoint[2])
+        )
+    )
+
+def center_min_max(minmax):
+    return ((minmax[0][0]+minmax[1][0])/2.0,
+            (minmax[0][1]+minmax[1][1])/2.0,
+            (minmax[0][2]+minmax[1][2])/2.0)
+
+
 class SetPosition(State):    
     ''' We start in motion and wait for stillness'''
     def __init__(self,centroid):
@@ -392,6 +422,7 @@ class SetPosition(State):
         self.motions = 0
         self.motion_threshold = 15
         self.centroid = centroid
+        self.minmax = min_max_point((centroid,centroid),centroid)
         self.original_centroid = centroid
     def step(self,context):
         logging.info("State:SetPosition %s %s" % (self.stills, self.motions))
@@ -403,9 +434,13 @@ class SetPosition(State):
         else:
             self.motions += 1
             self.constill = 0
-            self.centroid = context.get_centroid()
+            self.centroid = mix_point(self.centroid,context.get_centroid(),0.5)
+            self.minmax = min_max_point(self.minmax,self.centroid)
+
         if self.motions > self.motion_threshold and self.constill > self.motion_threshold and stillnow:             
-            commander.add(NewPositionCommand(self.centroid))
+            pt = center_min_max(self.minmax)
+            pt = (pt[0],pt[1],pt[2] + 0.5)
+            commander.add(NewPositionCommand(pt))
             self.transition(default_state)
         else:
             self.transition(self)
