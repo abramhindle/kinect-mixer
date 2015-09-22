@@ -172,26 +172,16 @@ class SphereBounder(Bounder):
         self.mini   = 1024*np.ones((WIDTH,HEIGHT))
         self.maxi   = 0*np.zeros((WIDTH,HEIGHT))
         self.callback = None
-        #self.render_sphere()
-
-    # def render_sphere(self):
-    #     center = self.center
-    #     radius = self.radius
-    #     (cz,cx,cy) = point_to_depth_map(center[0],center[1],center[2])
-    #     (czf,_,_) = point_to_depth_map(center[0],center[1],center[2]+radius)
-    #     self.drad = np.abs(czf - cz)
-    #     (clz,clx,cly) = point_to_depth_map(center[0]-radius,center[1],center[2])
-    #     prad = clx - cx
-    #     xx, yy = numpy.mgrid[WIDTH, HEIGHT]
-    #     circle = (kinectXmat - cx) ** 2 + (kinectYmat - cy) ** 2 < prad*prad
-    #     self.circle = circle*1
 
     def matches(self,depthMap,xMat,yMat,zMat):
         center = self.center
         #(cz,cx,cy) = point_to_depth_map(center[0],center[1],center[2])
         (cx,cy,cz) = center
         rad = self.radius ** 3
-        matches = (xMat - cx) ** 2 + (yMat - cy) ** 2 + (zMat - cz) ** 2 < (self.radius ** 3)
+        equation = (xMat - float(cx)) ** 2 + (yMat - float(cy)) ** 2 + (zMat - float(cz)) ** 2
+        matches = equation < (self.radius ** 3)
+        cv2.imshow("equation",equation)
+
         match_sum = np.sum(matches)
         logging.info("SPhere match sum %s %s" % (match_sum, rad))
         return match_sum > 100 # choose something better
