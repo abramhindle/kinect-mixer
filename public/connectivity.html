@@ -49,7 +49,7 @@
       max="150"/>
       <span id="slider1S" class="myDesc"></span>
       P1 Voice: 
-      <select name="p1voice" class="voiceselect">
+      <select id="p1voice" name="p1voice" class="voiceselect">
         <option value="1" selected>1</option>
         <option value="2">2</option>
         <option value="3">3</option>
@@ -61,7 +61,7 @@
       max="150"/>
       <span id="slider2S" class="myDesc"></span>
       P2 Voice: 
-      <select name="p2voice" class="voiceselect">
+      <select id="p2voice" name="p2voice" class="voiceselect">
         <option value="1">1</option>
         <option value="2" selected>2</option>
         <option value="3">3</option>
@@ -73,7 +73,7 @@
       max="150"/>
       <span id="slider3S" class="myDesc"></span>
       P3 Voice: 
-      <select name="p3voice" class="voiceselect">
+      <select id="p3voice" name="p3voice" class="voiceselect">
         <option value="1">1</option>
         <option value="2">2</option>
         <option value="3" selected>3</option>
@@ -84,6 +84,7 @@
 <script>
 var maxslider = 100.0;
 var minmix = 0.01;
+var expscale = 6.0;
 function attachSlider( name, setter) {
     var slider = document.getElementById(name);
     var sliderS = document.getElementById(name+"S");
@@ -95,7 +96,6 @@ function attachSlider( name, setter) {
     slider.keydown = f;
 };
 function sendMix(m) {
-    console.log(slider1 + " " + slider2 + " " + slider3 + " " + slider4);
     var msg = {"queue":[[ "127.0.0.1", "/mixer/fourch", 
                           "f",m[0],
                           "f",m[1],
@@ -118,7 +118,6 @@ function sendMix(m) {
     xhr.overrideMimeType("application/json");
     xhr.setRequestHeader('Accept', 'application/json');
     xhr.send( JSON.stringify( msg ) );
-    return x;
 };
 var origw = 960.0;
 var origh = 960.0;
@@ -141,13 +140,19 @@ function addressClick(x,y) {
     var scale1 = document.getElementById("p1slider").value / maxslider;
     var scale2 = document.getElementById("p2slider").value / maxslider;
     var scale3 = document.getElementById("p3slider").value / maxslider;
-    var exp2 = Math.exp(2.0);
-    var mix1 = Math.exp(1.0 + minmix + (1.0 - minmix) * scale1 * (1.0 - (d1 / sq2)))/exp2;
-    var mix2 = Math.exp(1.0 + minmix + (1.0 - minmix) * scale2 * (1.0 - (d2 / sq2)))/exp2;
-    var mix3 = Math.exp(1.0 + minmix + (1.0 - minmix) * scale3 * (1.0 - (d3 / sq2)))/exp2;
+    var range = expscale;
+    var exp2 = Math.exp(expscale);
+    var mix1 = scale1*Math.exp(1.0 + (range-1.0)*(minmix + (1.0 - minmix) * (1.0 - (d1 / sq2))))/exp2;
+    var mix2 = scale2*Math.exp(1.0 + (range-1.0)*(minmix + (1.0 - minmix) * (1.0 - (d2 / sq2))))/exp2;
+    var mix3 = scale3*Math.exp(1.0 + (range-1.0)*(minmix + (1.0 - minmix) * (1.0 - (d3 / sq2))))/exp2;
 
     console.log(d1 + " " + d2 + " " + d3);
     console.log(mix1 + " " + mix2 + " " + mix3);
+    mix = [0.0,0.0,0.0,0.0];
+    mix[document.getElementById("p1voice").value - 1] = mix1;
+    mix[document.getElementById("p2voice").value - 1] = mix2;
+    mix[document.getElementById("p3voice").value - 1] = mix3;
+    sendMix(mix);
 }
 function installPositionalJack() {
     var main   = document.getElementById("maindiv");
