@@ -1,26 +1,86 @@
 <!doctype html>
 <html>
-	<head>
-		<title>Mixer Panel</title>
-	</head>
-	<body>
-		<style>
-			.mySlider {
-				width: 90%;
-				height: 5em;
-				border: 1px;
-				border-style: dashed;
-			}
-			.myDesc {
-				width: 10%;
-			}
-			.bdiv {
-			}
-		</style>
-		<div class="bdiv"><input id="slider1" type="range" class="mySlider" min="0" max="150"><span id="slider1S" class="myDesc"></span></div>
-		<div class="bdiv"><input id="slider2" type="range" class="mySlider" min="0" max="150"><span id="slider2S" class="myDesc"></span></div>
-		<div class="bdiv"><input id="slider3" type="range" class="mySlider" min="0" max="150"><span id="slider3S" class="myDesc"></span></div>
-		<div class="bdiv"><input id="slider4" type="range" class="mySlider" min="0" max="150"><span id="slider4S" class="myDesc"></span></div>
+  <head>
+    <title>Mixer Panel</title>
+  </head>
+  <body>
+    <style>
+      .mySlider {
+      width: 50%;
+      height: 5em;
+      border: 1px;
+      border-style: dashed;
+      }
+      .myDesc {
+      width: 10%;
+      }
+      .bdiv {
+      }
+      .main {
+      margin: auto;
+      height: 666px;
+      width: 666px;
+      pointer-events: none;
+              -khtml-user-select: none;
+              -o-user-select: none;
+              -moz-user-select: none;
+              -webkit-user-select: none;
+      user-select: none;
+      }
+      .maindiv {
+      text-align: center;
+      width: 100%;
+      border: dashed;
+      }
+      .pdiv {
+      text-align: center;
+      }
+      .jack {
+      position: absolute;
+      width:5em;
+      }
+    </style>
+    <div class="maindiv" id="maindiv">
+      <img class="main" id="main" src="connectivity.png"/>
+    </div>
+    <img class="jack" id="jack" src="66degreequarterinch.png"/>
+    <div class="pdiv">
+      P1 Scale: <input id="p1slider" type="range" class="mySlider" min="0"
+      max="150">
+      <span id="slider1S" class="myDesc"></span>
+      P1 Voice: 
+      <select name="p1voice" class="voiceselect">
+        <option value="1" selected>1</option>
+        <option value="2">2</option>
+        <option value="3">3</option>
+        <option value="4">4</option>
+      </select>
+    </div>
+    <div class="pdiv">
+      P2 Scale: <input id="p2slider" type="range" class="mySlider" min="0"
+      max="150">
+      <span id="slider2S" class="myDesc"></span>
+      P2 Voice: 
+      <select name="p2voice" class="voiceselect">
+        <option value="1">1</option>
+        <option value="2" selected>2</option>
+        <option value="3">3</option>
+        <option value="4">4</option>
+      </select>
+    </div>
+    <div class="pdiv">
+      P3 Scale: <input id="p3slider" type="range" class="mySlider" min="0"
+      max="150">
+      <span id="slider3S" class="myDesc"></span>
+      P3 Voice: 
+      <select name="p3voice" class="voiceselect">
+        <option value="1">1</option>
+        <option value="2">2</option>
+        <option value="3" selected>3</option>
+        <option value="4">4</option>
+      </select>
+    </div>
+
 <script>
 var maxslider = 100.0;
 function attachSlider( name, setter) {
@@ -33,17 +93,13 @@ function attachSlider( name, setter) {
     slider.onchange = f;
     slider.keydown = f;
 };
-function getSliders(x) {
-    var slider1 = document.getElementById("slider1").value;
-    var slider2 = document.getElementById("slider2").value;
-    var slider3 = document.getElementById("slider3").value;
-    var slider4 = document.getElementById("slider4").value;
+function sendMix(m) {
     console.log(slider1 + " " + slider2 + " " + slider3 + " " + slider4);
     var msg = {"queue":[[ "127.0.0.1", "/mixer/fourch", 
-                          "f",slider1/maxslider,
-                          "f",slider2/maxslider,
-                          "f",slider3/maxslider, 
-                          "f",slider4/maxslider]]};
+                          "f",m[0],
+                          "f",m[1],
+                          "f",m[2], 
+                          "f",m[3]]]};
     var xhr = new XMLHttpRequest();
     xhr.onreadystatechange = function () {
         if (xhr.readyState==4) {
@@ -63,13 +119,27 @@ function getSliders(x) {
     xhr.send( JSON.stringify( msg ) );
     return x;
 };
+function installPositionalJack() {
+    var main   = document.getElementById("maindiv");
+    var mainu   = document.getElementById("main");
+    var cursor = document.getElementById("jack");
+    main.onclick = function(e) {
+        var x = e.pageX;
+        var y = e.pageY;
+        //console.log(x + " " + y);
+        var mr = mainu.getBoundingClientRect();
+        cursor.style.left = (x - cursor.offsetWidth) +"px";
+        cursor.style.top  = (y - cursor.offsetHeight) +"px";
+        var ix = (x - mr.left) / (1.0*(mr.right - mr.left));
+        var iy = (y - mr.top) /  (1.0*(mr.bottom - mr.top));
+        console.log(mr.left);
+        console.log(ix + " " + iy);
+    };
+}
 console.log("Functions defined");
 window.onload = function() {
-	attachSlider("slider1",getSliders);
-	attachSlider("slider2",getSliders);
-	attachSlider("slider3",getSliders);
-	attachSlider("slider4",getSliders);
-	console.log("Installed");
+    installPositionalJack();
+    console.log("Installed");
 };
 </script>
 
