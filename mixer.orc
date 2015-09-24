@@ -46,7 +46,7 @@ gihandle OSCinit 7770
         kf3 init 0
         kf4 init 0
       nxtmsg:           
-        kk  OSClisten gihandle, "/foo/bar", "ffff", kf1, kf2, kf3, kf4
+        kk  OSClisten gihandle, "/mixer/fourch", "ffff", kf1, kf2, kf3, kf4
       if (kk == 0) goto ex
         gkamp1 = kf1  
         gkamp2 = kf2  
