@@ -9,10 +9,18 @@ import random
 import time
 import logging
 import scipy.ndimage.morphology
+import argparse
+import timeout_decorator
 
 logging.basicConfig(stream = sys.stderr, level=logging.INFO)
 # 1. get kinect input
 # 2. bounding box calculation
+
+parser = argparse.ArgumentParser(description='Track Motion!')
+parser.add_argument('-p', dest='motion', action='store_true',help="Start in motion capture mode")
+parser.set_defaults(motion=False)
+args = parser.parse_args()
+
 
 screen_name = "KinectMixer"
 
@@ -244,7 +252,7 @@ commander = Commander()
 positions = list()
 bounds = list()
 
-def addPosition(centroid, radius=0.75):
+def addPosition(centroid, radius=1.1):
     global positions
     global bounds
     positions.append(centroid)
@@ -429,7 +437,7 @@ class SetPosition(State):
 
         if self.motions > self.motion_threshold and self.constill > self.motion_threshold and stillnow:             
             pt = center_min_max(self.minmax)
-            pt = (pt[0],pt[1],pt[2] + 0.5)
+            pt = (pt[0],pt[1],pt[2])
             commander.add(NewPositionCommand(pt))
             self.transition(default_state)
         else:
@@ -445,6 +453,10 @@ class SetPosition(State):
 starttime = None
 context = Context()
 curr_state = Stillness()
+if args.motion:
+    curr_state = TransitionState()
+
+
 
 # step 1 get noise map
 
