@@ -4,3 +4,6 @@ runtest1:	kinect-mixer.py
 
 live:	kinect-mixer.py
 	python kinect-mixer.py
+
+oscrelay: oscrelay.pl
+	hypnotoad -f oscrelay.pl

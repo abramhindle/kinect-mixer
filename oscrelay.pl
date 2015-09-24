@@ -26,7 +26,7 @@ use strict;
 use JSON;
 use Data::Dumper;
 use Net::OpenSoundControl::Client;
-my %allowed = ( "/mixer/fourch" => "/mixer/fourch" };
+my %allowed = ( "/mixer/fourch" => "/mixer/fourch" );
 
 #my %hosts = map { $_ => $_ } (map { sprintf("slave%02d",$_) } (1..64));
 my %hosts = ( "127.0.0.1" => "127.0.0.1" );
