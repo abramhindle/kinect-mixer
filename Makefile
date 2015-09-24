@@ -7,3 +7,6 @@ live:	kinect-mixer.py
 
 oscrelay: oscrelay.pl
 	hypnotoad -f oscrelay.pl
+
+mixerpanel:
+	setsid firefox http://127.0.0.1:8080/connectivity.html &

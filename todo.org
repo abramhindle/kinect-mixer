@@ -1,11 +1,11 @@
-- [ ] 4 channel Mixing / scaling?
+- [X] 4 channel Mixing / scaling?
 - [ ] measure mixing latency
-- [ ] csound mixer?
-- [ ] OSC input
+- [X] csound mixer?
+- [X] OSC input
 - [ ] OSC Centroid output
 - [ ] Test mixer
 - [ ] Drift Centroid algorithm
-- [ ] Manual Override
+- [X] Manual Override
 - [ ] Slow motion mixing
-- [ ] Web Interface
+- [X] Web Interface
 - [ ] crowd detection
