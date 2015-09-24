@@ -1,21 +1,9 @@
 
-       	sr = 44100
-	kr = 441
-	ksmps = 100
-	nchnls = 4
+sr = 44100
+kr = 441
+ksmps = 100
+nchnls = 4
 
-      gkindex init 1
-      gkmodkn init 1
-      gkcar init 1
-      gkmod init 1
-
-
-;zakinit 20,20
-
-;massign 1,1
-
-;turnon 1,0
-;maxalloc 1,1
 
 
 FLcolor	180,200,199
@@ -36,17 +24,34 @@ FLpanel_end	;***** end of container
 FLrun		;***** runs the widget thread 
 
 
-      gkamp1 init 1
-      gkamp2 init 1
-      gkamp3 init 1
-      gkamp4 init 1
+gkamp1 init 0.0001
+gkamp2 init 0.0001
+gkamp3 init 0.0001
+gkamp4 init 0.0001
 
-        instr 1
-	a1,a2,a3,a4 inq
-	aa1 = a1 * gkamp1
-	aa2 = a2 * gkamp2
-	aa3 = a3 * gkamp3
-	aa4 = a4 * gkamp4
-	outq aa1,aa2,aa3,aa4
-        endin   
+    instr 1
+        a1,a2,a3,a4 inq
+        aa1 = a1 * gkamp1
+        aa2 = a2 * gkamp2
+        aa3 = a3 * gkamp3
+        aa4 = a4 * gkamp4
+        outq aa1,aa2,aa3,aa4
+    endin        
 
+gihandle OSCinit 7770
+
+    instr oscmix       
+        kf1 init 0
+        kf2 init 0
+        kf3 init 0
+        kf4 init 0
+      nxtmsg:           
+        kk  OSClisten gihandle, "/foo/bar", "ffff", kf1, kf2, kf3, kf4
+      if (kk == 0) goto ex
+        gkamp1 = kf1  
+        gkamp2 = kf2  
+        gkamp3 = kf3  
+        gkamp4 = kf4
+        kgoto nxtmsg
+      ex:
+    endin
