@@ -3,10 +3,12 @@
   - it's ok
 - [X] csound mixer?
 - [X] OSC input
-- [ ] OSC Centroid output
+- [X] OSC Centroid output
 - [X] Test mixer
 - [ ] Drift Centroid algorithm
 - [X] Manual Override
 - [ ] Slow motion mixing
 - [X] Web Interface
-- [ ] crowd detection
+- [X] crowd detection
+- [ ] Decay mixing from centroid
+- [ ] Scale centroid
