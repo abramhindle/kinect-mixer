@@ -13,9 +13,11 @@ gkamp1,    iknob1 FLknob  "AMP1", 0.0001, 2, -1,1, -1, 50, 0,0
 gkamp2,    iknob2 FLknob  "AMP2", 0.0001, 2, -1,1, -1, 50, 50,0
 gkamp3,    iknob3 FLknob  "AMP3", 0.0001, 2, -1,1, -1, 50, 100,0
 gkamp4,    iknob4 FLknob  "AMP4", 0.0001, 2, -1,1, -1, 50, 150,0
-gkhtim,    islider5 FLslider  "HTime", 0.01, 1.0, -1,1,1, 200,25,0,75
+gkhtim,    islider5 FLslider  "HTime", 0.01, 1.0, -1,1,1, 150,25,0,75
+gkignore,  ibutton  FLbutton  "Motion",0,1,22,50,25,150,75,-1
 
-
+gkignore init 0
+FLsetVal_i   0.0, ibutton
 FLsetVal_i   1.0, iknob1
 FLsetVal_i   1.0, iknob2
 FLsetVal_i   1.0, iknob3
@@ -119,6 +121,7 @@ gihandle OSCinit 7770
         kdist1 init 0
         kdist2 init 0
         kdist3 init 0
+      if (gkignore == 1) goto ex
       nxtmsg:           
         kk  OSClisten gihandle, "/kinect/centroid", "fff", kf1, kf2, kf3
       if (kk == 0) goto ex
