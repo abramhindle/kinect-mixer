@@ -265,9 +265,14 @@ def addPosition(centroid, radius=1.1):
     global positions
     global bounds
     positions.append(centroid)
+    posi = len(positions) + 1
     bounder = SphereBounder(centroid, radius)
     def responder():
         logging.warn("Centroid: (%s,%s,%s) reached!" % centroid)
+        send_osc("/kinect/position_trigger",int(posi),
+                 float(centroid[0]),
+                 float(centroid[1]),
+                 float(centroid[2]))
     bounder.cb = responder
     bounds.append(bounder)
     
