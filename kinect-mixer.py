@@ -18,8 +18,14 @@ logging.basicConfig(stream = sys.stderr, level=logging.INFO)
 
 parser = argparse.ArgumentParser(description='Track Motion!')
 parser.add_argument('-p', dest='motion', action='store_true',help="Start in motion capture mode")
-parser.set_defaults(motion=False)
+parser.add_argument('-osc', dest='osc', default=7770,help="OSC Port")
+parser.set_defaults(motion=False,osc=7770)
 args = parser.parse_args()
+
+target = liblo.Address(7770)
+def send_osc(path,*args):
+    global target
+    return liblo.send(target, path, *args)
 
 
 screen_name = "KinectMixer"
@@ -214,8 +220,11 @@ class Context(object):
         if self.mask == None:
             self.mask = self.depth >= 0
         self.diff = np.abs((self.mask & (depth > 0) & (self.lastframe > 0)) * (depth - self.lastframe))
+        #self.diff = np.abs((self.mask & (depth > 0) ) * (depth - self.lastframe))
+        # self.diff = self.diff**2
 
-        self.diff = scipy.ndimage.morphology.grey_erosion(self.diff,size=(3,3))
+        #self.diff = scipy.ndimage.morphology.grey_erosion(self.diff,size=(3,3))
+
         #self.diff = np.abs(depth - self.lastframe)
         #self.diff = (self.diff < 10) * self.diff
         self.lastframe = depth
@@ -445,6 +454,15 @@ class SetPosition(State):
 
             
         
+def communicate_centroid(centroid):
+    logging.info("Centroid sending (%s,%s,%s)" % centroid)
+    send_osc("/kinect/centroid",float(centroid[0]),float(centroid[1]),float(centroid[2]))
+    
+def communicate_positions(positions):
+    for i in range(0,len(positions)):
+        pos = positions[i]
+        logging.info("Pos sending %s (%s)" % (i,pos))
+        send_osc("/kinect/position",int(i),float(pos[0]),float(pos[1]),float(pos[2]))
 
 
                 
@@ -467,16 +485,18 @@ def get_mask(n=15):
     n = 15
     for i in range(0,n):
         depth_map = get_depth_map().astype(np.int)
+        depth_map = scipy.ndimage.morphology.grey_erosion(depth_map,size=(3,3))
+
         summap += (depth_map < 1) | (depth_map > 1020)
         logging.debug("%s %s" % (np.min(depth_map), np.max(depth_map)))
         logging.debug("%s %s %s" % (np.min(summap),np.max(summap),(np.sum(summap)/float(640*480))))
 
-    mask = (summap == n) | (summap < (n*1/10)) * 1
+    mask = (summap == n) | (summap < (n*1/20)) * 1
     return (mask, summap)
 
 context.mask, summap = get_mask(15)
-cv2.imshow("summap",200*summap/60.0)
-cv2.imshow("mask",np.ones(context.mask.shape)*context.mask)
+#cv2.imshow("summap",200*summap/60.0)
+#cv2.imshow("mask",np.ones(context.mask.shape)*context.mask)
 
 # UI plans
 # press p to set state to transition for setting a position
@@ -503,10 +523,17 @@ while(1):
 
     check_bounds(depth_map,x,y,z,bound_list=bounds)
 
+    # now communicate the centroid if there is motion
+    
+    if not context.detect_stillness():
+        communicate_centroid(context.get_centroid())
+        communicate_positions(positions)
+
     depth_map_bmp = depth_map_to_bmp(depth_map)
     depth_map_bmp = cv2.flip(depth_map_bmp, 1)
-    cv2.imshow(screen_name,depth_map_bmp)
-    cv2.imshow("%s - diff" % screen_name,depth_map_to_bmp(context.diff))# * context.diff))
+    cv2.imshow(screen_name,(255/8) * (depth_map_bmp % 8))
+    # cv2.imshow("%s - diff" % screen_name,depth_map_to_bmp(context.diff))# * context.diff))
+    cv2.imshow("%s - diff" % screen_name,(context.diff == 0)*255.0)# * context.diff))
 
     if handle_keys():
         break
