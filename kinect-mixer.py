@@ -22,7 +22,7 @@ parser.add_argument('-osc', dest='osc', default=7770,help="OSC Port")
 parser.set_defaults(motion=False,osc=7770)
 args = parser.parse_args()
 
-target = liblo.Address(7770)
+target = liblo.Address(args.osc)
 def send_osc(path,*args):
     global target
     return liblo.send(target, path, *args)
@@ -33,7 +33,7 @@ screen_name = "KinectMixer"
 def current_time():
     return int(round(time.time() * 1000))
 
-target = liblo.Address(57120)
+
 
 fullscreen = False
 cv2.namedWindow(screen_name, cv2.WND_PROP_FULLSCREEN)
@@ -460,8 +460,9 @@ class SetPosition(State):
             
         
 def communicate_centroid(centroid):
+    send_osc("/kinect/centroid",*centroid)
     logging.info("Centroid sending (%s,%s,%s)" % centroid)
-    send_osc("/kinect/centroid",float(centroid[0]),float(centroid[1]),float(centroid[2]))
+
     
 def communicate_positions(positions):
     for i in range(0,len(positions)):
