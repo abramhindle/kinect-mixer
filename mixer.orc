@@ -29,6 +29,21 @@ gkamp2 init 0.0001
 gkamp3 init 0.0001
 gkamp4 init 0.0001
 
+gkpos1x init 0.0
+gkpos1y init 0.0
+gkpos1z init -2.0
+
+gkpos2x init -2.0
+gkpos2y init 0.0
+gkpos2z init -1.0
+
+gkpos3x init 2.0
+gkpos3y init 0.0
+gkpos3z init -1.0
+
+giexpscale init 6.0
+gisqrt init sqrt(5.0)
+
     instr 1
         a1,a2,a3,a4 inq
         aa1 = a1 * gkamp1
@@ -52,6 +67,59 @@ gihandle OSCinit 7770
         gkamp2 = kf2  
         gkamp3 = kf3  
         gkamp4 = kf4
+        kgoto nxtmsg
+      ex:
+    endin
+
+    instr oscposition       
+        kf1 init 0
+        kf2 init 0
+        kf3 init 0
+        kf4 init 0
+      nxtmsg:           
+        kk  OSClisten gihandle, "/kinect/position", "ifff", kf1, kf2, kf3, kf4
+      if (kk == 0) goto ex
+        if (kf1 == 0) goto pos0
+        if (kf1 == 1) goto pos1
+        if (kf1 == 2) goto pos2
+        kgoto nxtmsg
+      pos0:
+        gkpos1x = kf2
+        gkpos1y = kf3
+        gkpos1z = kf4
+        kgoto nxtmsg
+      pos1:
+        gkpos2x = kf2
+        gkpos2y = kf3
+        gkpos2z = kf4
+        kgoto nxtmsg
+      pos2:
+        gkpos3x = kf2
+        gkpos3y = kf3
+        gkpos3z = kf4
+        kgoto nxtmsg
+      ex:
+    endin
+
+    instr osccentroid    
+        kf1 init 0
+        kf2 init 0
+        kf3 init 0
+        kf4 init 0
+        kdist1 init 0
+        kdist2 init 0
+        kdist3 init 0
+      nxtmsg:           
+        kk  OSClisten gihandle, "/kinect/centroid", "fff", kf1, kf2, kf3
+      if (kk == 0) goto ex
+        kdist1 = sqrt((kf1 - gkpos1x)^2 + (kf2 - gkpos1y)^2 + (kf3 - gkpos1z)^2)
+        kdist2 = sqrt((kf1 - gkpos2x)^2 + (kf2 - gkpos2y)^2 + (kf3 - gkpos2z)^2)
+        kdist3 = sqrt((kf1 - gkpos3x)^2 + (kf2 - gkpos3y)^2 + (kf3 - gkpos3z)^2)
+        gkamp1 = exp(1.0 + (giexpscale - 1) * (1.0 - (kdist1/gisqrt)))/exp(giexpscale)
+        gkamp2 = exp(1.0 + (giexpscale - 1) * (1.0 - (kdist2/gisqrt)))/exp(giexpscale)
+        gkamp3 = exp(1.0 + (giexpscale - 1) * (1.0 - (kdist3/gisqrt)))/exp(giexpscale)
+        printk2 kdist1
+        printk2 kdist2
         kgoto nxtmsg
       ex:
     endin
