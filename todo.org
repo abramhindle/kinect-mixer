@@ -1,9 +1,10 @@
 - [X] 4 channel Mixing / scaling?
 - [ ] measure mixing latency
+  - it's ok
 - [X] csound mixer?
 - [X] OSC input
 - [ ] OSC Centroid output
-- [ ] Test mixer
+- [X] Test mixer
 - [ ] Drift Centroid algorithm
 - [X] Manual Override
 - [ ] Slow motion mixing
