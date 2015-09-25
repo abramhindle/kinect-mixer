@@ -29,17 +29,20 @@ gkamp2 init 0.0001
 gkamp3 init 0.0001
 gkamp4 init 0.0001
 
-gkpos1x init 0.0
-gkpos1y init 0.0
-gkpos1z init -2.0
 
 gkpos2x init -2.0
 gkpos2y init 0.0
-gkpos2z init -1.0
+gkpos2z init 1.0
 
-gkpos3x init 2.0
+; (-2.5654042855,0.731932929987,1.92851628927)
+gkpos1x init -2.5
+gkpos1y init 0.7
+gkpos1z init 1.9
+
+gkpos3x init 0.0
 gkpos3y init 0.0
-gkpos3z init -1.0
+gkpos3z init 3.0
+
 
 giexpscale init 6.0
 gisqrt init sqrt(5.0)
