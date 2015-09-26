@@ -35,21 +35,38 @@ gkamp4 init 0.0001
 
 gkhtim init 0.25
 
-gkpos2x init -2.0
-gkpos2y init 0.0
-gkpos2z init 1.0
 
 ; (-2.5654042855,0.731932929987,1.92851628927)
-gkpos1x init -2.5
-gkpos1y init 0.7
-gkpos1z init 1.9
+; INFO:root:Centroid sending (2.89381892107,-0.526489799227,3.85365332503)
+; INFO:root:Centroid sending (3.15571526385,-0.879275256892,3.63295835472)
+;gkpos1x init -2.5
+;gkpos1y init 0.7
+;gkpos1z init 1.9
+; INFO:root:Centroid sending (2.36762915481,-0.675700425355,3.33034554415)
+; INFO:root:Centroid sending (2.89381892107,-0.526489799227,3.85365332503)
+; INFO:root:Centroid sending (3.15571526385,-0.879275256892,3.63295835472)
 
-gkpos3x init 0.0
-gkpos3y init 0.0
-gkpos3z init 3.0
+gkpos1x init 2.8
+gkpos1y init -0.675
+gkpos1z init 3.6
+
+;INFO:root:Centroid sending (-2.00309403727,-0.787678318548,3.20481173845)
+; 0.574901953346,-0.14967868418,4.63504335212
+; INFO:root:Centroid sending (-2.34979532587,-0.903490026386,3.72836603454)
+gkpos2x init -2.349
+gkpos2y init -0.9
+gkpos2z init 3.7
+
+; WARNING:root:Centroid: (2.51921113936,-0.775117179692,3.31196510232) reached!
+; 0.574901953346,-0.14967868418,4.63504335212
+gkpos3x init 0.574
+gkpos3y init -0.149
+gkpos3z init 4.63
 
 
-giexpscale init 6.0
+
+
+giexpscale init 1.7
 gisqrt init sqrt(5.0)
 
     instr 1

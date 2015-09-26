@@ -240,7 +240,7 @@ class Context(object):
         self.seen += 1
 
     def detect_stillness(self, threshold=100):
-        thresh = (WIDTH * HEIGHT * 0.5)
+        thresh = (WIDTH * HEIGHT * 0.1)
         logging.debug("%s < %s" % (self.diffsum,thresh))
         return self.diffsum < thresh 
 

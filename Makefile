@@ -26,3 +26,6 @@ testsig: testsig.sco testsig.orc
 
 kill:
 	ps | egrep '(fakenect|python)' | cut -d ' ' -f 1 | xargs kill
+
+mixer:
+	bash mixer.sh
