@@ -7,12 +7,13 @@ nchnls = 4
 
 
 FLcolor	180,200,199
-FLpanel 	"Mixer",200,100
+FLpanel 	"Mixer",250,100
             
 gkamp1,    iknob1 FLknob  "AMP1", 0.0001, 2, -1,1, -1, 50, 0,0
 gkamp2,    iknob2 FLknob  "AMP2", 0.0001, 2, -1,1, -1, 50, 50,0
 gkamp3,    iknob3 FLknob  "AMP3", 0.0001, 2, -1,1, -1, 50, 100,0
 gkamp4,    iknob4 FLknob  "AMP4", 0.0001, 2, -1,1, -1, 50, 150,0
+gkexpscale, iknob5 FLknob  "Subtle", 1.00, 4.0, -1,1, -1, 50, 200,0
 gkhtim,    islider5 FLslider  "HTime", 0.01, 1.0, -1,1,1, 150,25,0,75
 gkignore,  ibutton  FLbutton  "Motion",0,1,22,50,25,150,75,-1
 
@@ -143,9 +144,9 @@ gihandle OSCinit 7770
         kdist1 = sqrt((kf1 - gkpos1x)^2 + (kf2 - gkpos1y)^2 + (kf3 - gkpos1z)^2)
         kdist2 = sqrt((kf1 - gkpos2x)^2 + (kf2 - gkpos2y)^2 + (kf3 - gkpos2z)^2)
         kdist3 = sqrt((kf1 - gkpos3x)^2 + (kf2 - gkpos3y)^2 + (kf3 - gkpos3z)^2)
-        gkamp1 = exp(1.0 + (giexpscale - 1) * (1.0 - (kdist1/gisqrt)))/exp(giexpscale)
-        gkamp2 = exp(1.0 + (giexpscale - 1) * (1.0 - (kdist2/gisqrt)))/exp(giexpscale)
-        gkamp3 = exp(1.0 + (giexpscale - 1) * (1.0 - (kdist3/gisqrt)))/exp(giexpscale)
+        gkamp1 = exp(1.0 + (gkexpscale - 1) * (1.0 - (kdist1/gisqrt)))/exp(gkexpscale)
+        gkamp2 = exp(1.0 + (gkexpscale - 1) * (1.0 - (kdist2/gisqrt)))/exp(gkexpscale)
+        gkamp3 = exp(1.0 + (gkexpscale - 1) * (1.0 - (kdist3/gisqrt)))/exp(gkexpscale)
         printk2 kdist1
         printk2 kdist2
         kgoto nxtmsg
