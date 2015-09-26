@@ -470,6 +470,9 @@ def communicate_positions(positions):
         logging.info("Pos sending %s (%s)" % (i,pos))
         send_osc("/kinect/position",int(i),float(pos[0]),float(pos[1]),float(pos[2]))
 
+def communicate_equal_mix(mix=0.3):
+    send_osc("/kinect/fourch",mix,mix,mix,mix)
+    logging.info("Reseting to gkamp to %s" %  mix)
 
                 
 
@@ -509,6 +512,23 @@ context.mask, summap = get_mask(15)
 # press s to reset to stillness
 # - [ ] need to add positional triggers    
 
+class OneTime(object):
+    def __init__(self,timeout):
+        self.time = time.clock()
+        self.triggered = False
+        self.timeout = timeout
+    def check(self):
+        if self.triggered:
+            return False
+        now = time.clock()
+        if now - self.time > self.timeout:
+            self.triggered = True
+            return True
+
+
+my_stills = None
+my_timeout = 60.0
+
 def check_bounds(depthMap,xMat,yMat,zMat,bound_list = None):
     if bound_list == None:
         bound_list = bounds
@@ -534,6 +554,13 @@ while(1):
     if not context.detect_stillness():
         communicate_centroid(context.get_centroid())
         communicate_positions(positions)
+        my_stills = None
+    else:
+        if my_stills == None:
+            my_stills = OneTime(my_timeout)
+        if my_stills.check():
+            communicate_equal_mix()
+            
 
     depth_map_bmp = depth_map_to_bmp(depth_map)
     depth_map_bmp = cv2.flip(depth_map_bmp, 1)
