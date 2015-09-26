@@ -471,8 +471,8 @@ def communicate_positions(positions):
         send_osc("/kinect/position",int(i),float(pos[0]),float(pos[1]),float(pos[2]))
 
 def communicate_equal_mix(mix=0.3):
-    send_osc("/kinect/equalmix",mix)
-    #send_osc("/kinect/fourch",mix,mix,mix,mix)
+    #send_osc("/kinect/equalmix",mix)
+    send_osc("/kinect/fourch",mix,mix,mix,mix)
     logging.info("Reseting to gkamp to %s" %  mix)
 
                 

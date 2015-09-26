@@ -104,6 +104,7 @@ gihandle OSCinit 7770
         kf2 init 0
         kf3 init 0
         kf4 init 0
+      if (gkignore == 1) goto ex
       nxtmsg:           
         kk  OSClisten gihandle, "/mixer/equalmix", "f", kf1
       if (kk == 0) goto ex
