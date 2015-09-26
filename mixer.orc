@@ -64,7 +64,7 @@ gkpos3y init -0.149
 gkpos3z init 4.63
 
 
-giexpscale init 1.7
+giexpscale init 1.5
 gisqrt init sqrt(5.0)
 
     instr 1
