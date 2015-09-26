@@ -99,6 +99,23 @@ gihandle OSCinit 7770
       ex:
     endin
 
+    instr oscequalmix       
+        kf1 init 0
+        kf2 init 0
+        kf3 init 0
+        kf4 init 0
+      nxtmsg:           
+        kk  OSClisten gihandle, "/mixer/equalmix", "f", kf1
+      if (kk == 0) goto ex
+        gkamp1 = kf1  
+        gkamp2 = kf1
+        gkamp3 = kf1  
+        gkamp4 = kf1
+        kgoto nxtmsg
+      ex:
+    endin
+
+
     instr oscposition       
         kf1 init 0
         kf2 init 0
